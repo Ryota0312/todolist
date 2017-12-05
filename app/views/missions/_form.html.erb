@@ -1,0 +1,29 @@
+<%= form_with(model: mission, local: true) do |form| %>
+  <% if mission.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(mission.errors.count, "error") %> prohibited this mission from being saved:</h2>
+
+      <ul>
+      <% mission.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_area :title, id: :mission_title %>
+  </div>
+
+  <div class="field">
+    <%= form.label :desc %>
+    <%= form.text_area :desc, id: :mission_desc %>
+  </div>
+
+  <%= form.hidden_field :parent_mission, value: params[:parent_mission] %>
+
+  <div class="actions">
+    <%= form.submit %>
+  </div>
+<% end %>

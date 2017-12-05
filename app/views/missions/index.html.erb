@@ -1,0 +1,27 @@
+<p id="notice"><%= notice %></p>
+
+<h1>Missions</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>State</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% nested_set_options(@missions) { |i| "#{'―' * i.level} #{i.title}" }.each do |mission, id| %>
+      <tr>
+        <td><%= link_to mission, mission_path(id) %></td>
+	<td><%= link_to Mission.find(id).state, { :action => "change_state", :id => id } %></td>
+	<td><%= link_to 'Add Mission', new_mission_path(id, params: {parent_mission: id}) %></td>
+        <td><%= link_to 'Destroy', mission_path(id), method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Mission', new_mission_path %>

@@ -1,0 +1,20 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Title:</strong>
+  <%= @mission.title %>
+</p>
+
+<p>
+  <strong>Desc:</strong>
+  <%= @mission.desc %>
+</p>
+
+<p>
+  <strong>State:</strong>
+  <%= @mission.state %>
+</p>
+
+<%= link_to 'Edit', edit_mission_path(@mission) %> |
+<%= link_to 'Destroy', mission_path(@mission), method: :delete, data: { confirm: 'Are you sure?' } %> |
+<%= link_to 'Back', missions_path %>
