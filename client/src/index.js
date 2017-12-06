@@ -9,11 +9,12 @@ class App extends React.Component {
             data: [],
         };
         this.handleMissionSubmit = this.handleMissionSubmit.bind(this);
+        this.handleMissionDelete = this.handleMissionDelete.bind(this);
     }
 
     componentDidMount() {
         request
-            .get(this.props.url)
+            .get(this.props.url + ".json")
             .set('Content-Type', 'application/json')
             .end((err, res) => {
                 if(err){
@@ -28,7 +29,7 @@ class App extends React.Component {
 
     handleMissionSubmit(mission) {
         request
-            .post(this.props.url)
+            .post(this.props.url + ".json")
             .set('X-CSRF-Token', this.getCsrfToken())
             .send(mission)
             .end((err, res) => {
@@ -38,6 +39,25 @@ class App extends React.Component {
                     var missions = this.state.data;
                     var newMissions = missions.concat(res.body);
                     this.setState({data: newMissions});
+                }
+            })
+    }
+
+    handleMissionDelete(id) {
+        var newMissions = this.state.data
+            .filter(function(mission) {
+                return mission.id != id
+            });
+        request
+            .del(this.props.url + '/' + id + ".json")
+            .set('X-CSRF-Token', this.getCsrfToken())
+            .end((err, res) => {
+                if(err) {
+                    console.log('error')
+                } else {
+                    this.setState({
+                        data: newMissions
+                    })
                 }
             })
     }
@@ -55,7 +75,7 @@ class App extends React.Component {
         return (
                 <div className="app">
                 <h1>Todolist</h1>
-                <Todolist data={this.state.data} />
+                <Todolist data={this.state.data} onMissionDelete={this.handleMissionDelete} />
                 <MissionForm parentId="" onMissionSubmit={this.handleMissionSubmit} />
                 </div>
         );
@@ -100,7 +120,7 @@ class Todolist extends React.Component {
     render() {
         var missions = this.props.data.map(function(mission) {
             return (
-                    <Mission key={mission.id} title={mission.title} desc={mission.desc} state={mission.state} />
+                    <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} onMissionDelete={this.props.onMissionDelete}/>
             );
         }.bind(this));
 
@@ -123,17 +143,25 @@ class Todolist extends React.Component {
 }
 
 class Mission extends React.Component {
+    handleDelete(e) {
+        e.preventDefault();
+        this.props.onMissionDelete(this.props.id);
+    }
+
     render() {
         return (
                 <tr>
                 <td>{this.props.title}</td>
                 <td>{this.props.state}</td>
+                <td>
+                <button className="btn btn-danger" onClick={this.handleDelete.bind(this)}>delete</button>
+                </td>
                 </tr>
         );
     }
 }
 
 ReactDOM.render(
-        <App url="missions.json" />,
+        <App url="missions" />,
     document.getElementById("content")
 );

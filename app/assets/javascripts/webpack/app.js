@@ -102,6 +102,7 @@ var App = function (_React$Component) {
             data: []
         };
         _this.handleMissionSubmit = _this.handleMissionSubmit.bind(_this);
+        _this.handleMissionDelete = _this.handleMissionDelete.bind(_this);
         return _this;
     }
 
@@ -110,7 +111,7 @@ var App = function (_React$Component) {
         value: function componentDidMount() {
             var _this2 = this;
 
-            request.get(this.props.url).set('Content-Type', 'application/json').end(function (err, res) {
+            request.get(this.props.url + ".json").set('Content-Type', 'application/json').end(function (err, res) {
                 if (err) {
                     console.log(_this2.props.url);
                 } else {
@@ -125,13 +126,31 @@ var App = function (_React$Component) {
         value: function handleMissionSubmit(mission) {
             var _this3 = this;
 
-            request.post(this.props.url).set('X-CSRF-Token', this.getCsrfToken()).send(mission).end(function (err, res) {
+            request.post(this.props.url + ".json").set('X-CSRF-Token', this.getCsrfToken()).send(mission).end(function (err, res) {
                 if (err) {
                     console.log('error');
                 } else {
                     var missions = _this3.state.data;
                     var newMissions = missions.concat(res.body);
                     _this3.setState({ data: newMissions });
+                }
+            });
+        }
+    }, {
+        key: 'handleMissionDelete',
+        value: function handleMissionDelete(id) {
+            var _this4 = this;
+
+            var newMissions = this.state.data.filter(function (mission) {
+                return mission.id != id;
+            });
+            request.del(this.props.url + '/' + id + ".json").set('X-CSRF-Token', this.getCsrfToken()).end(function (err, res) {
+                if (err) {
+                    console.log('error');
+                } else {
+                    _this4.setState({
+                        data: newMissions
+                    });
                 }
             });
         }
@@ -156,7 +175,7 @@ var App = function (_React$Component) {
                     null,
                     'Todolist'
                 ),
-                _react2.default.createElement(Todolist, { data: this.state.data }),
+                _react2.default.createElement(Todolist, { data: this.state.data, onMissionDelete: this.handleMissionDelete }),
                 _react2.default.createElement(MissionForm, { parentId: '', onMissionSubmit: this.handleMissionSubmit })
             );
         }
@@ -228,7 +247,7 @@ var Todolist = function (_React$Component3) {
         key: 'render',
         value: function render() {
             var missions = this.props.data.map(function (mission) {
-                return _react2.default.createElement(Mission, { key: mission.id, title: mission.title, desc: mission.desc, state: mission.state });
+                return _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, onMissionDelete: this.props.onMissionDelete });
             }.bind(this));
 
             return _react2.default.createElement(
@@ -278,6 +297,12 @@ var Mission = function (_React$Component4) {
     }
 
     _createClass(Mission, [{
+        key: 'handleDelete',
+        value: function handleDelete(e) {
+            e.preventDefault();
+            this.props.onMissionDelete(this.props.id);
+        }
+    }, {
         key: 'render',
         value: function render() {
             return _react2.default.createElement(
@@ -292,6 +317,15 @@ var Mission = function (_React$Component4) {
                     'td',
                     null,
                     this.props.state
+                ),
+                _react2.default.createElement(
+                    'td',
+                    null,
+                    _react2.default.createElement(
+                        'button',
+                        { className: 'btn btn-danger', onClick: this.handleDelete.bind(this) },
+                        'delete'
+                    )
                 )
             );
         }
@@ -300,7 +334,7 @@ var Mission = function (_React$Component4) {
     return Mission;
 }(_react2.default.Component);
 
-_reactDom2.default.render(_react2.default.createElement(App, { url: 'missions.json' }), document.getElementById("content"));
+_reactDom2.default.render(_react2.default.createElement(App, { url: 'missions' }), document.getElementById("content"));
 
 /***/ }),
 /* 1 */
