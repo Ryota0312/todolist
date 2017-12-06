@@ -10,6 +10,7 @@ class App extends React.Component {
         };
         this.handleMissionSubmit = this.handleMissionSubmit.bind(this);
         this.handleMissionDelete = this.handleMissionDelete.bind(this);
+        this.handleMissionUpdate = this.handleMissionUpdate.bind(this);
     }
 
     componentDidMount() {
@@ -62,6 +63,18 @@ class App extends React.Component {
             })
     }
 
+    handleMissionUpdate(mission) {
+        request
+            .patch(this.props.url + '/' + mission.mission.id + '.json')
+            .set('X-CSRF-Token', this.getCsrfToken())
+            .send(mission)
+            .end((err, res) => {
+                if(err) {
+                    console.log('error')
+                }
+            })
+    }
+
     getCsrfToken() {
         var meta = document.getElementsByTagName('meta');
         for (var elem in meta) {
@@ -75,7 +88,7 @@ class App extends React.Component {
         return (
                 <div className="app">
                 <h1>Todolist</h1>
-                <Todolist data={this.state.data} onMissionDelete={this.handleMissionDelete} />
+                <Todolist data={this.state.data} onMissionDelete={this.handleMissionDelete} onMissionUpdate={this.handleMissionUpdate} />
                 <MissionForm parentId="" onMissionSubmit={this.handleMissionSubmit} />
                 </div>
         );
@@ -120,7 +133,7 @@ class Todolist extends React.Component {
     render() {
         var missions = this.props.data.map(function(mission) {
             return (
-                    <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} onMissionDelete={this.props.onMissionDelete}/>
+                    <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} />
             );
         }.bind(this));
 
@@ -148,11 +161,23 @@ class Mission extends React.Component {
         this.props.onMissionDelete(this.props.id);
     }
 
+    handleUpdate(e) {
+        e.preventDefault();
+        this.props.onMissionUpdate({mission: {id: this.props.id,
+                                           state: e.target.value}});
+    }
+
     render() {
         return (
                 <tr>
                 <td>{this.props.title}</td>
-                <td>{this.props.state}</td>
+                <td>
+                <select className="form-control" defaultValue={this.props.state} onChange={this.handleUpdate.bind(this)}>
+                <option value="TODO" key="TODO">TODO</option>
+                <option value="DOING" key="DOING">DOING</option>
+                <option value="DONE" key="DONE">DONE</option>
+                </select>
+                </td>
                 <td>
                 <button className="btn btn-danger" onClick={this.handleDelete.bind(this)}>delete</button>
                 </td>

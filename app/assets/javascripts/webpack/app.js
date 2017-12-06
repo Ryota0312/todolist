@@ -103,6 +103,7 @@ var App = function (_React$Component) {
         };
         _this.handleMissionSubmit = _this.handleMissionSubmit.bind(_this);
         _this.handleMissionDelete = _this.handleMissionDelete.bind(_this);
+        _this.handleMissionUpdate = _this.handleMissionUpdate.bind(_this);
         return _this;
     }
 
@@ -155,6 +156,15 @@ var App = function (_React$Component) {
             });
         }
     }, {
+        key: 'handleMissionUpdate',
+        value: function handleMissionUpdate(mission) {
+            request.patch(this.props.url + '/' + mission.mission.id + '.json').set('X-CSRF-Token', this.getCsrfToken()).send(mission).end(function (err, res) {
+                if (err) {
+                    console.log('error');
+                }
+            });
+        }
+    }, {
         key: 'getCsrfToken',
         value: function getCsrfToken() {
             var meta = document.getElementsByTagName('meta');
@@ -175,7 +185,7 @@ var App = function (_React$Component) {
                     null,
                     'Todolist'
                 ),
-                _react2.default.createElement(Todolist, { data: this.state.data, onMissionDelete: this.handleMissionDelete }),
+                _react2.default.createElement(Todolist, { data: this.state.data, onMissionDelete: this.handleMissionDelete, onMissionUpdate: this.handleMissionUpdate }),
                 _react2.default.createElement(MissionForm, { parentId: '', onMissionSubmit: this.handleMissionSubmit })
             );
         }
@@ -247,7 +257,7 @@ var Todolist = function (_React$Component3) {
         key: 'render',
         value: function render() {
             var missions = this.props.data.map(function (mission) {
-                return _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, onMissionDelete: this.props.onMissionDelete });
+                return _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate });
             }.bind(this));
 
             return _react2.default.createElement(
@@ -303,6 +313,13 @@ var Mission = function (_React$Component4) {
             this.props.onMissionDelete(this.props.id);
         }
     }, {
+        key: 'handleUpdate',
+        value: function handleUpdate(e) {
+            e.preventDefault();
+            this.props.onMissionUpdate({ mission: { id: this.props.id,
+                    state: e.target.value } });
+        }
+    }, {
         key: 'render',
         value: function render() {
             return _react2.default.createElement(
@@ -316,7 +333,25 @@ var Mission = function (_React$Component4) {
                 _react2.default.createElement(
                     'td',
                     null,
-                    this.props.state
+                    _react2.default.createElement(
+                        'select',
+                        { className: 'form-control', defaultValue: this.props.state, onChange: this.handleUpdate.bind(this) },
+                        _react2.default.createElement(
+                            'option',
+                            { value: 'TODO', key: 'TODO' },
+                            'TODO'
+                        ),
+                        _react2.default.createElement(
+                            'option',
+                            { value: 'DOING', key: 'DOING' },
+                            'DOING'
+                        ),
+                        _react2.default.createElement(
+                            'option',
+                            { value: 'DONE', key: 'DONE' },
+                            'DONE'
+                        )
+                    )
                 ),
                 _react2.default.createElement(
                     'td',
