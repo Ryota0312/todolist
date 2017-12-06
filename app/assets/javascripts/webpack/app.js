@@ -106,6 +106,7 @@ var App = function (_React$Component) {
         _this.handleMissionDelete = _this.handleMissionDelete.bind(_this);
         _this.handleMissionUpdate = _this.handleMissionUpdate.bind(_this);
         _this.handleArrowClick = _this.handleArrowClick.bind(_this);
+        _this.handleAddTextClick = _this.handleAddTextClick.bind(_this);
         return _this;
     }
 
@@ -121,6 +122,7 @@ var App = function (_React$Component) {
                     var children = {};
                     for (var i = 0; i < res.body.length; i++) {
                         res.body[i].collapsed = true;
+                        res.body[i].form_collapsed = true;
                         if (res.body[i].parent_id != null) {
                             if (!children[res.body[i].parent_id]) {
                                 children[res.body[i].parent_id] = [];
@@ -145,6 +147,7 @@ var App = function (_React$Component) {
                     console.log('error');
                 } else {
                     res.body.collapsed = true;
+                    res.body.form_collapsed = true;
                     var children = _this3.state.children;
                     if (res.body.parent_id != null) {
                         if (!children[res.body.parent_id]) {
@@ -206,9 +209,22 @@ var App = function (_React$Component) {
     }, {
         key: 'handleArrowClick',
         value: function handleArrowClick(id) {
-            var newMissions = this.state.data.slice().map(function (mission) {
+            var newMissions = this.state.data.map(function (mission) {
                 if (mission.id == id) {
                     mission.collapsed = !mission.collapsed;
+                }
+                return mission;
+            });
+            this.setState({
+                data: newMissions
+            });
+        }
+    }, {
+        key: 'handleAddTextClick',
+        value: function handleAddTextClick(id) {
+            var newMissions = this.state.data.map(function (mission) {
+                if (mission.id == id) {
+                    mission.form_collapsed = !mission.form_collapsed;
                 }
                 return mission;
             });
@@ -237,8 +253,8 @@ var App = function (_React$Component) {
                     null,
                     'Todolist'
                 ),
-                _react2.default.createElement(Todolist, { data: this.state.data, children: this.state.children, onMissionDelete: this.handleMissionDelete, onMissionUpdate: this.handleMissionUpdate, onArrowClick: this.handleArrowClick }),
-                _react2.default.createElement(MissionForm, { parentId: '', onMissionSubmit: this.handleMissionSubmit })
+                _react2.default.createElement(Todolist, { data: this.state.data, children: this.state.children, onMissionDelete: this.handleMissionDelete, onMissionUpdate: this.handleMissionUpdate, onArrowClick: this.handleArrowClick, onAddTextClick: this.handleAddTextClick, onMissionSubmit: this.handleMissionSubmit }),
+                _react2.default.createElement(MissionForm, { parent_id: '', onMissionSubmit: this.handleMissionSubmit })
             );
         }
     }]);
@@ -286,7 +302,7 @@ var MissionForm = function (_React$Component2) {
                     { className: 'input-group' },
                     _react2.default.createElement('input', { type: 'text', className: 'form-control', placeholder: 'Title', ref: 'title' }),
                     _react2.default.createElement('input', { type: 'text', className: 'form-control', placeholder: 'Desc', ref: 'desc' }),
-                    _react2.default.createElement('input', { type: 'hidden', className: 'form-control', value: this.props.parentID, ref: 'parent_id' }),
+                    _react2.default.createElement('input', { type: 'hidden', className: 'form-control', value: this.props.parent_id, ref: 'parent_id' }),
                     _react2.default.createElement('input', { type: 'submit', className: 'btn', value: 'Create' })
                 )
             );
@@ -311,7 +327,7 @@ var Todolist = function (_React$Component3) {
             var missions = this.props.data.filter(function (mission) {
                 return mission.parent_id == null;
             }).map(function (mission) {
-                return _react2.default.createElement(MissionTreeView, { key: mission.id, mission: mission, children: this.props.children, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick });
+                return _react2.default.createElement(MissionTreeView, { key: mission.id, mission: mission, children: this.props.children, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick, onAddTextClick: this.props.onAddTextClick, onMissionSubmit: this.props.onMissionSubmit });
             }.bind(this));
 
             return _react2.default.createElement(
@@ -344,16 +360,25 @@ var MissionTreeView = function (_React$Component4) {
                 arrowClass += " tree-view_arrow-collapsed";
                 childrenClass += ' tree-view_children-collapsed';
             }
+
             var childrenContainer = null;
             if (mission.id != null && this.props.children[mission.id]) {
                 childrenContainer = this.props.children[mission.id].map(function (child) {
-                    return _react2.default.createElement(MissionTreeView, { key: child.id, mission: child, children: this.props.children, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick });
+                    return _react2.default.createElement(MissionTreeView, { key: child.id, mission: child, children: this.props.children, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick, onAddTextClick: this.props.onAddTextClick, onMissionSubmit: this.props.onMissionSubmit });
                 }.bind(this));
             }
+
+            var addFormContainer = _react2.default.createElement(MissionForm, { parent_id: mission.id, onMissionSubmit: this.props.onMissionSubmit });
+
             return _react2.default.createElement(
                 'div',
                 { className: 'tree-view' },
-                _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, parent_id: mission.parent_id, arrowClass: arrowClass, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick }),
+                _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, parent_id: mission.parent_id, arrowClass: arrowClass, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick, onAddTextClick: this.props.onAddTextClick }),
+                _react2.default.createElement(
+                    'div',
+                    { className: mission.form_collapsed ? "add-form_collapsed" : "" },
+                    mission.form_collapsed ? null : addFormContainer
+                ),
                 _react2.default.createElement(
                     'div',
                     { className: childrenClass },
@@ -395,6 +420,12 @@ var Mission = function (_React$Component5) {
             this.props.onArrowClick(this.props.id);
         }
     }, {
+        key: 'handleAddTextClick',
+        value: function handleAddTextClick(e) {
+            e.preventDefault();
+            this.props.onAddTextClick(this.props.id);
+        }
+    }, {
         key: 'render',
         value: function render() {
             return _react2.default.createElement(
@@ -427,6 +458,15 @@ var Mission = function (_React$Component5) {
                             { value: 'DONE', key: 'DONE' },
                             'DONE'
                         )
+                    )
+                ),
+                _react2.default.createElement(
+                    'div',
+                    { className: 'tree-view_cell' },
+                    _react2.default.createElement(
+                        'span',
+                        { className: 'add-form_link', onClick: this.handleAddTextClick.bind(this) },
+                        'Add Mission'
                     )
                 ),
                 _react2.default.createElement(

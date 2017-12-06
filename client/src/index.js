@@ -13,6 +13,7 @@ class App extends React.Component {
         this.handleMissionDelete = this.handleMissionDelete.bind(this);
         this.handleMissionUpdate = this.handleMissionUpdate.bind(this);
         this.handleArrowClick = this.handleArrowClick.bind(this);
+        this.handleAddTextClick = this.handleAddTextClick.bind(this);
     }
 
     componentDidMount() {
@@ -26,6 +27,7 @@ class App extends React.Component {
                     var children = {};
                     for (var i = 0; i < res.body.length; i++) {
                         res.body[i].collapsed = true;
+                        res.body[i].form_collapsed = true;
                         if (res.body[i].parent_id != null) {
                             if (!children[res.body[i].parent_id]) {
                                 children[res.body[i].parent_id] = [];
@@ -51,6 +53,7 @@ class App extends React.Component {
                     console.log('error')
                 } else {
                     res.body.collapsed = true;
+                    res.body.form_collapsed = true;
                     var children = this.state.children;
                     if (res.body.parent_id != null) {
                         if (!children[res.body.parent_id]) {
@@ -117,10 +120,22 @@ class App extends React.Component {
 
     handleArrowClick(id) {
         var newMissions = this.state.data
-            .slice()
             .map(function(mission) {
                 if (mission.id == id) {
                     mission.collapsed = !mission.collapsed;
+                }
+                return mission;
+            });
+        this.setState({
+            data: newMissions
+        })
+    }
+
+    handleAddTextClick(id) {
+        var newMissions = this.state.data
+            .map(function(mission) {
+                if (mission.id == id) {
+                    mission.form_collapsed = !mission.form_collapsed;
                 }
                 return mission;
             });
@@ -142,8 +157,8 @@ class App extends React.Component {
         return (
                 <div className="app">
                 <h1>Todolist</h1>
-                <Todolist data={this.state.data} children={this.state.children} onMissionDelete={this.handleMissionDelete} onMissionUpdate={this.handleMissionUpdate} onArrowClick={this.handleArrowClick}/>
-                <MissionForm parentId="" onMissionSubmit={this.handleMissionSubmit} />
+                <Todolist data={this.state.data} children={this.state.children} onMissionDelete={this.handleMissionDelete} onMissionUpdate={this.handleMissionUpdate} onArrowClick={this.handleArrowClick} onAddTextClick={this.handleAddTextClick} onMissionSubmit={this.handleMissionSubmit} />
+                <MissionForm parent_id="" onMissionSubmit={this.handleMissionSubmit} />
                 </div>
         );
     }
@@ -175,7 +190,7 @@ class MissionForm extends React.Component {
                 <div className="input-group">
                 <input type="text" className="form-control" placeholder="Title" ref="title" />
                 <input type="text" className="form-control" placeholder="Desc" ref="desc" />
-                <input type="hidden" className="form-control" value={this.props.parentID} ref="parent_id" />
+                <input type="hidden" className="form-control" value={this.props.parent_id} ref="parent_id" />
                 <input type="submit" className="btn" value="Create" />
                 </div>
                 </form>
@@ -191,7 +206,7 @@ class Todolist extends React.Component {
             })
             .map(function(mission) {
                 return (
-                        <MissionTreeView key={mission.id} mission={mission} children={this.props.children} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
+                        <MissionTreeView key={mission.id} mission={mission} children={this.props.children} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} onAddTextClick={this.props.onAddTextClick} onMissionSubmit={this.props.onMissionSubmit} />
                 );
             }.bind(this));
 
@@ -212,18 +227,27 @@ class MissionTreeView extends React.Component {
             arrowClass += " tree-view_arrow-collapsed";
             childrenClass += ' tree-view_children-collapsed';
         }
+
         var childrenContainer = null;
         if (mission.id != null && this.props.children[mission.id]) {
             childrenContainer = this.props.children[mission.id]
                 .map(function(child) {
                     return (
-                            <MissionTreeView key={child.id} mission={child} children={this.props.children} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
+                            <MissionTreeView key={child.id} mission={child} children={this.props.children} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} onAddTextClick={this.props.onAddTextClick} onMissionSubmit={this.props.onMissionSubmit} />
                     );
                 }.bind(this));
         }
+
+        var addFormContainer = (
+                <MissionForm parent_id={mission.id} onMissionSubmit={this.props.onMissionSubmit} />
+        );
+
         return (
                 <div className="tree-view">
-                <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} parent_id={mission.parent_id} arrowClass={arrowClass} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
+                <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} parent_id={mission.parent_id} arrowClass={arrowClass} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} onAddTextClick={this.props.onAddTextClick} />
+                <div className={mission.form_collapsed ? "add-form_collapsed" : ""}>
+                {mission.form_collapsed ? null : addFormContainer}
+                </div>
                 <div className={childrenClass}>
                 {mission.collapsed ? null : childrenContainer}
                 </div>
@@ -249,6 +273,11 @@ class Mission extends React.Component {
         this.props.onArrowClick(this.props.id);
     }
 
+    handleAddTextClick(e) {
+        e.preventDefault();
+        this.props.onAddTextClick(this.props.id);
+    }
+
     render() {
         return (
                 <div className="tree-view_item">
@@ -262,6 +291,9 @@ class Mission extends React.Component {
                 <option value="DOING" key="DOING">DOING</option>
                 <option value="DONE" key="DONE">DONE</option>
                 </select>
+                </div>
+                <div className="tree-view_cell">
+                <span className="add-form_link" onClick={this.handleAddTextClick.bind(this)}>Add Mission</span>
                 </div>
                 <div className="tree-view_cell">
                 <button className="btn btn-danger" onClick={this.handleDelete.bind(this)}>delete</button>
