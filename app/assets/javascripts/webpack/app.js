@@ -113,10 +113,11 @@ var App = function (_React$Component) {
             request.get(this.props.url).set('Content-Type', 'application/json').end(function (err, res) {
                 if (err) {
                     console.log(_this2.props.url);
+                } else {
+                    _this2.setState({
+                        data: res.body
+                    });
                 }
-                _this2.setState({
-                    data: res.body
-                });
             });
         }
     }, {
@@ -127,10 +128,11 @@ var App = function (_React$Component) {
             request.post(this.props.url).set('X-CSRF-Token', this.getCsrfToken()).send(mission).end(function (err, res) {
                 if (err) {
                     console.log('error');
+                } else {
+                    var missions = _this3.state.data;
+                    var newMissions = missions.concat(res.body);
+                    _this3.setState({ data: newMissions });
                 }
-                var missions = _this3.state.data;
-                var newMissions = missions.concat(res.body);
-                _this3.setState({ data: newMissions });
             });
         }
     }, {

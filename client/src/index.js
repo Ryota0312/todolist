@@ -18,10 +18,11 @@ class App extends React.Component {
             .end((err, res) => {
                 if(err){
                     console.log(this.props.url)
+                } else {
+                    this.setState({
+                        data: res.body
+                    })
                 }
-                this.setState({
-                    data: res.body
-                })
             })
     }
 
@@ -33,10 +34,11 @@ class App extends React.Component {
             .end((err, res) => {
                 if(err) {
                     console.log('error')
+                } else {
+                    var missions = this.state.data;
+                    var newMissions = missions.concat(res.body);
+                    this.setState({data: newMissions});
                 }
-                var missions = this.state.data;
-                var newMissions = missions.concat(res.body);
-                this.setState({data: newMissions});
             })
     }
 
