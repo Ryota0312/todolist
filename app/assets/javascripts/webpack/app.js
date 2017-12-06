@@ -104,6 +104,7 @@ var App = function (_React$Component) {
         _this.handleMissionSubmit = _this.handleMissionSubmit.bind(_this);
         _this.handleMissionDelete = _this.handleMissionDelete.bind(_this);
         _this.handleMissionUpdate = _this.handleMissionUpdate.bind(_this);
+        _this.handleArrowClick = _this.handleArrowClick.bind(_this);
         return _this;
     }
 
@@ -116,6 +117,9 @@ var App = function (_React$Component) {
                 if (err) {
                     console.log(_this2.props.url);
                 } else {
+                    for (var i = 0; i < res.body.length; i++) {
+                        res.body[i].collapsed = true;
+                    }
                     _this2.setState({
                         data: res.body
                     });
@@ -131,6 +135,7 @@ var App = function (_React$Component) {
                 if (err) {
                     console.log('error');
                 } else {
+                    res.body.collapsed = true;
                     var missions = _this3.state.data;
                     var newMissions = missions.concat(res.body);
                     _this3.setState({ data: newMissions });
@@ -165,6 +170,19 @@ var App = function (_React$Component) {
             });
         }
     }, {
+        key: 'handleArrowClick',
+        value: function handleArrowClick(id) {
+            var newMissions = this.state.data.slice().map(function (mission) {
+                if (mission.id == id) {
+                    mission.collapsed = !mission.collapsed;
+                }
+                return mission;
+            });
+            this.setState({
+                data: newMissions
+            });
+        }
+    }, {
         key: 'getCsrfToken',
         value: function getCsrfToken() {
             var meta = document.getElementsByTagName('meta');
@@ -185,7 +203,7 @@ var App = function (_React$Component) {
                     null,
                     'Todolist'
                 ),
-                _react2.default.createElement(Todolist, { data: this.state.data, onMissionDelete: this.handleMissionDelete, onMissionUpdate: this.handleMissionUpdate }),
+                _react2.default.createElement(Todolist, { data: this.state.data, onMissionDelete: this.handleMissionDelete, onMissionUpdate: this.handleMissionUpdate, onArrowClick: this.handleArrowClick }),
                 _react2.default.createElement(MissionForm, { parentId: '', onMissionSubmit: this.handleMissionSubmit })
             );
         }
@@ -257,39 +275,13 @@ var Todolist = function (_React$Component3) {
         key: 'render',
         value: function render() {
             var missions = this.props.data.map(function (mission) {
-                return _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate });
+                return _react2.default.createElement(MissionTreeView, { key: mission.id, mission: mission, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick });
             }.bind(this));
 
             return _react2.default.createElement(
                 'div',
-                { className: 'todo' },
-                _react2.default.createElement(
-                    'table',
-                    null,
-                    _react2.default.createElement(
-                        'thead',
-                        null,
-                        _react2.default.createElement(
-                            'tr',
-                            null,
-                            _react2.default.createElement(
-                                'td',
-                                null,
-                                ' Title '
-                            ),
-                            _react2.default.createElement(
-                                'td',
-                                null,
-                                ' State '
-                            )
-                        )
-                    ),
-                    _react2.default.createElement(
-                        'tbody',
-                        null,
-                        missions
-                    )
-                )
+                { className: 'todo-list' },
+                missions
             );
         }
     }]);
@@ -297,8 +289,36 @@ var Todolist = function (_React$Component3) {
     return Todolist;
 }(_react2.default.Component);
 
-var Mission = function (_React$Component4) {
-    _inherits(Mission, _React$Component4);
+var MissionTreeView = function (_React$Component4) {
+    _inherits(MissionTreeView, _React$Component4);
+
+    function MissionTreeView() {
+        _classCallCheck(this, MissionTreeView);
+
+        return _possibleConstructorReturn(this, (MissionTreeView.__proto__ || Object.getPrototypeOf(MissionTreeView)).apply(this, arguments));
+    }
+
+    _createClass(MissionTreeView, [{
+        key: 'render',
+        value: function render() {
+            var mission = this.props.mission;
+            var arrowClass = "tree-view_arrow";
+            if (mission.collapsed) {
+                arrowClass += " tree-view_arrow-collapsed";
+            }
+            return _react2.default.createElement(
+                'div',
+                { className: 'tree-view' },
+                _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, arrowClass: arrowClass, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick })
+            );
+        }
+    }]);
+
+    return MissionTreeView;
+}(_react2.default.Component);
+
+var Mission = function (_React$Component5) {
+    _inherits(Mission, _React$Component5);
 
     function Mission() {
         _classCallCheck(this, Mission);
@@ -320,19 +340,26 @@ var Mission = function (_React$Component4) {
                     state: e.target.value } });
         }
     }, {
+        key: 'handleClick',
+        value: function handleClick(e) {
+            e.preventDefault();
+            this.props.onArrowClick(this.props.id);
+        }
+    }, {
         key: 'render',
         value: function render() {
             return _react2.default.createElement(
-                'tr',
-                null,
+                'div',
+                { className: 'tree-view_item' },
+                _react2.default.createElement('div', { className: this.props.arrowClass, onClick: this.handleClick.bind(this) }),
                 _react2.default.createElement(
-                    'td',
-                    null,
+                    'div',
+                    { className: 'tree-view_cell' },
                     this.props.title
                 ),
                 _react2.default.createElement(
-                    'td',
-                    null,
+                    'div',
+                    { className: 'tree-view_cell' },
                     _react2.default.createElement(
                         'select',
                         { className: 'form-control', defaultValue: this.props.state, onChange: this.handleUpdate.bind(this) },
@@ -354,8 +381,8 @@ var Mission = function (_React$Component4) {
                     )
                 ),
                 _react2.default.createElement(
-                    'td',
-                    null,
+                    'div',
+                    { className: 'tree-view_cell' },
                     _react2.default.createElement(
                         'button',
                         { className: 'btn btn-danger', onClick: this.handleDelete.bind(this) },

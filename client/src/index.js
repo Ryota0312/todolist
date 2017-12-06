@@ -11,6 +11,7 @@ class App extends React.Component {
         this.handleMissionSubmit = this.handleMissionSubmit.bind(this);
         this.handleMissionDelete = this.handleMissionDelete.bind(this);
         this.handleMissionUpdate = this.handleMissionUpdate.bind(this);
+        this.handleArrowClick = this.handleArrowClick.bind(this);
     }
 
     componentDidMount() {
@@ -21,6 +22,9 @@ class App extends React.Component {
                 if(err){
                     console.log(this.props.url)
                 } else {
+                    for (var i = 0; i < res.body.length; i++) {
+                        res.body[i].collapsed = true;
+                    }
                     this.setState({
                         data: res.body
                     })
@@ -37,6 +41,7 @@ class App extends React.Component {
                 if(err) {
                     console.log('error')
                 } else {
+                    res.body.collapsed = true;
                     var missions = this.state.data;
                     var newMissions = missions.concat(res.body);
                     this.setState({data: newMissions});
@@ -75,6 +80,20 @@ class App extends React.Component {
             })
     }
 
+    handleArrowClick(id) {
+        var newMissions = this.state.data
+            .slice()
+            .map(function(mission) {
+                if (mission.id == id) {
+                    mission.collapsed = !mission.collapsed;
+                }
+                return mission;
+            });
+        this.setState({
+            data: newMissions
+        })
+    }
+
     getCsrfToken() {
         var meta = document.getElementsByTagName('meta');
         for (var elem in meta) {
@@ -88,7 +107,7 @@ class App extends React.Component {
         return (
                 <div className="app">
                 <h1>Todolist</h1>
-                <Todolist data={this.state.data} onMissionDelete={this.handleMissionDelete} onMissionUpdate={this.handleMissionUpdate} />
+                <Todolist data={this.state.data} onMissionDelete={this.handleMissionDelete} onMissionUpdate={this.handleMissionUpdate} onArrowClick={this.handleArrowClick}/>
                 <MissionForm parentId="" onMissionSubmit={this.handleMissionSubmit} />
                 </div>
         );
@@ -133,24 +152,29 @@ class Todolist extends React.Component {
     render() {
         var missions = this.props.data.map(function(mission) {
             return (
-                    <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} />
+                    <MissionTreeView key={mission.id} mission={mission} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
             );
         }.bind(this));
 
         return (
-           <div className="todo">
-                <table>
-                <thead>
-                <tr>
-                <td> Title </td>
-                <td> State </td>
-                </tr>
-                </thead>
-                <tbody>
+            <div className="todo-list">
                 {missions}
-                </tbody>
-                </table>
             </div>
+        );
+    }
+}
+
+class MissionTreeView extends React.Component {
+    render() {
+        var mission = this.props.mission;
+        var arrowClass = "tree-view_arrow";
+        if (mission.collapsed) {
+            arrowClass += " tree-view_arrow-collapsed";
+        }
+        return (
+                <div className="tree-view">
+                <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} arrowClass={arrowClass} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
+                </div>
         );
     }
 }
@@ -164,24 +188,32 @@ class Mission extends React.Component {
     handleUpdate(e) {
         e.preventDefault();
         this.props.onMissionUpdate({mission: {id: this.props.id,
-                                           state: e.target.value}});
+                                              state: e.target.value}});
+    }
+
+    handleClick(e) {
+        e.preventDefault();
+        this.props.onArrowClick(this.props.id);
     }
 
     render() {
         return (
-                <tr>
-                <td>{this.props.title}</td>
-                <td>
+                <div className="tree-view_item">
+                <div className={this.props.arrowClass} onClick={this.handleClick.bind(this)}/>
+                <div className="tree-view_cell">
+                {this.props.title}
+                </div>
+                <div className="tree-view_cell">
                 <select className="form-control" defaultValue={this.props.state} onChange={this.handleUpdate.bind(this)}>
                 <option value="TODO" key="TODO">TODO</option>
                 <option value="DOING" key="DOING">DOING</option>
                 <option value="DONE" key="DONE">DONE</option>
                 </select>
-                </td>
-                <td>
+                </div>
+                <div className="tree-view_cell">
                 <button className="btn btn-danger" onClick={this.handleDelete.bind(this)}>delete</button>
-                </td>
-                </tr>
+                </div>
+                </div>
         );
     }
 }
