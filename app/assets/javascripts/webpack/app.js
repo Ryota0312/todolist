@@ -232,7 +232,33 @@ var Todolist = function (_React$Component3) {
             return _react2.default.createElement(
                 'div',
                 { className: 'todo' },
-                missions
+                _react2.default.createElement(
+                    'table',
+                    null,
+                    _react2.default.createElement(
+                        'thead',
+                        null,
+                        _react2.default.createElement(
+                            'tr',
+                            null,
+                            _react2.default.createElement(
+                                'td',
+                                null,
+                                ' Title '
+                            ),
+                            _react2.default.createElement(
+                                'td',
+                                null,
+                                ' State '
+                            )
+                        )
+                    ),
+                    _react2.default.createElement(
+                        'tbody',
+                        null,
+                        missions
+                    )
+                )
             );
         }
     }]);
@@ -253,25 +279,17 @@ var Mission = function (_React$Component4) {
         key: 'render',
         value: function render() {
             return _react2.default.createElement(
-                'div',
-                { className: 'mission' },
+                'tr',
+                null,
                 _react2.default.createElement(
-                    'tbody',
+                    'td',
                     null,
-                    _react2.default.createElement(
-                        'tr',
-                        null,
-                        _react2.default.createElement(
-                            'td',
-                            null,
-                            this.props.title
-                        ),
-                        _react2.default.createElement(
-                            'td',
-                            null,
-                            this.props.state
-                        )
-                    )
+                    this.props.title
+                ),
+                _react2.default.createElement(
+                    'td',
+                    null,
+                    this.props.state
                 )
             );
         }

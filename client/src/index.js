@@ -103,8 +103,18 @@ class Todolist extends React.Component {
         }.bind(this));
 
         return (
-                <div className="todo">
+           <div className="todo">
+                <table>
+                <thead>
+                <tr>
+                <td> Title </td>
+                <td> State </td>
+                </tr>
+                </thead>
+                <tbody>
                 {missions}
+                </tbody>
+                </table>
             </div>
         );
     }
@@ -113,14 +123,10 @@ class Todolist extends React.Component {
 class Mission extends React.Component {
     render() {
         return (
-                <div className="mission">
-                <tbody>
                 <tr>
                 <td>{this.props.title}</td>
                 <td>{this.props.state}</td>
                 </tr>
-                </tbody>
-                </div>
         );
     }
 }
