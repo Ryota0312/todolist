@@ -30,9 +30,6 @@ class MissionsController < ApplicationController
 
     respond_to do |format|
       if @mission.save
-         if parent_id!=''
-           @mission.move_to_child_of(Mission.find(parent_id))
-         end
         format.html { redirect_to @mission, notice: 'Mission was successfully created.' }
         format.json { render :show, status: :created, location: @mission }
       else
