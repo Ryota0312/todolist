@@ -99,7 +99,8 @@ var App = function (_React$Component) {
         var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
 
         _this.state = {
-            data: []
+            data: [],
+            children: {}
         };
         _this.handleMissionSubmit = _this.handleMissionSubmit.bind(_this);
         _this.handleMissionDelete = _this.handleMissionDelete.bind(_this);
@@ -117,11 +118,19 @@ var App = function (_React$Component) {
                 if (err) {
                     console.log(_this2.props.url);
                 } else {
+                    var children = {};
                     for (var i = 0; i < res.body.length; i++) {
                         res.body[i].collapsed = true;
+                        if (res.body[i].parent_id != null) {
+                            if (!children[res.body[i].parent_id]) {
+                                children[res.body[i].parent_id] = [];
+                            }
+                            children[res.body[i].parent_id].push(res.body[i]);
+                        }
                     }
                     _this2.setState({
-                        data: res.body
+                        data: res.body,
+                        children: children
                     });
                 }
             });
@@ -136,26 +145,51 @@ var App = function (_React$Component) {
                     console.log('error');
                 } else {
                     res.body.collapsed = true;
+                    var children = _this3.state.children;
+                    if (res.body.parent_id != null) {
+                        if (!children[res.body.parent_id]) {
+                            children[res.body.parent_id] = [];
+                        }
+                        children[res.body.parent_id].push(res.body);
+                    }
                     var missions = _this3.state.data;
                     var newMissions = missions.concat(res.body);
-                    _this3.setState({ data: newMissions });
+                    _this3.setState({
+                        data: newMissions,
+                        children: children
+                    });
                 }
             });
         }
     }, {
         key: 'handleMissionDelete',
-        value: function handleMissionDelete(id) {
+        value: function handleMissionDelete(id, parent_id) {
             var _this4 = this;
 
             var newMissions = this.state.data.filter(function (mission) {
                 return mission.id != id;
             });
+            var newChildren = this.state.children;
+            if (parent_id != null && this.state.children[parent_id]) {
+                newChildren = {};
+                for (var key in this.state.children) {
+                    if (key == parent_id) {
+                        newChildren[key] = this.state.children[key].filter(function (child) {
+                            return child.id != id;
+                        });
+                    } else {
+                        newChildren[key] = this.state.children[key];
+                    }
+                }
+            }
+
             request.del(this.props.url + '/' + id + ".json").set('X-CSRF-Token', this.getCsrfToken()).end(function (err, res) {
                 if (err) {
                     console.log('error');
                 } else {
                     _this4.setState({
-                        data: newMissions
+                        data: newMissions,
+                        children: newChildren
                     });
                 }
             });
@@ -203,7 +237,7 @@ var App = function (_React$Component) {
                     null,
                     'Todolist'
                 ),
-                _react2.default.createElement(Todolist, { data: this.state.data, onMissionDelete: this.handleMissionDelete, onMissionUpdate: this.handleMissionUpdate, onArrowClick: this.handleArrowClick }),
+                _react2.default.createElement(Todolist, { data: this.state.data, children: this.state.children, onMissionDelete: this.handleMissionDelete, onMissionUpdate: this.handleMissionUpdate, onArrowClick: this.handleArrowClick }),
                 _react2.default.createElement(MissionForm, { parentId: '', onMissionSubmit: this.handleMissionSubmit })
             );
         }
@@ -274,8 +308,10 @@ var Todolist = function (_React$Component3) {
     _createClass(Todolist, [{
         key: 'render',
         value: function render() {
-            var missions = this.props.data.map(function (mission) {
-                return _react2.default.createElement(MissionTreeView, { key: mission.id, mission: mission, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick });
+            var missions = this.props.data.filter(function (mission) {
+                return mission.parent_id == null;
+            }).map(function (mission) {
+                return _react2.default.createElement(MissionTreeView, { key: mission.id, mission: mission, children: this.props.children, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick });
             }.bind(this));
 
             return _react2.default.createElement(
@@ -303,13 +339,26 @@ var MissionTreeView = function (_React$Component4) {
         value: function render() {
             var mission = this.props.mission;
             var arrowClass = "tree-view_arrow";
+            var childrenClass = 'tree-view_children';
             if (mission.collapsed) {
                 arrowClass += " tree-view_arrow-collapsed";
+                childrenClass += ' tree-view_children-collapsed';
+            }
+            var childrenContainer = null;
+            if (mission.id != null && this.props.children[mission.id]) {
+                childrenContainer = this.props.children[mission.id].map(function (child) {
+                    return _react2.default.createElement(MissionTreeView, { key: child.id, mission: child, children: this.props.children, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick });
+                }.bind(this));
             }
             return _react2.default.createElement(
                 'div',
                 { className: 'tree-view' },
-                _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, arrowClass: arrowClass, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick })
+                _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, parent_id: mission.parent_id, arrowClass: arrowClass, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick }),
+                _react2.default.createElement(
+                    'div',
+                    { className: childrenClass },
+                    mission.collapsed ? null : childrenContainer
+                )
             );
         }
     }]);
@@ -330,7 +379,7 @@ var Mission = function (_React$Component5) {
         key: 'handleDelete',
         value: function handleDelete(e) {
             e.preventDefault();
-            this.props.onMissionDelete(this.props.id);
+            this.props.onMissionDelete(this.props.id, this.props.parent_id);
         }
     }, {
         key: 'handleUpdate',

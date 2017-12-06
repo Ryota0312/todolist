@@ -7,6 +7,7 @@ class App extends React.Component {
         super(props);
         this.state = {
             data: [],
+            children: {},
         };
         this.handleMissionSubmit = this.handleMissionSubmit.bind(this);
         this.handleMissionDelete = this.handleMissionDelete.bind(this);
@@ -22,11 +23,19 @@ class App extends React.Component {
                 if(err){
                     console.log(this.props.url)
                 } else {
+                    var children = {};
                     for (var i = 0; i < res.body.length; i++) {
                         res.body[i].collapsed = true;
+                        if (res.body[i].parent_id != null) {
+                            if (!children[res.body[i].parent_id]) {
+                                children[res.body[i].parent_id] = [];
+                            }
+                            children[res.body[i].parent_id].push(res.body[i]);
+                        }
                     }
                     this.setState({
-                        data: res.body
+                        data: res.body,
+                        children: children
                     })
                 }
             })
@@ -42,18 +51,43 @@ class App extends React.Component {
                     console.log('error')
                 } else {
                     res.body.collapsed = true;
+                    var children = this.state.children;
+                    if (res.body.parent_id != null) {
+                        if (!children[res.body.parent_id]) {
+                            children[res.body.parent_id] = [];
+                        }
+                        children[res.body.parent_id].push(res.body);
+                    }
                     var missions = this.state.data;
                     var newMissions = missions.concat(res.body);
-                    this.setState({data: newMissions});
+                    this.setState({
+                        data: newMissions,
+                        children: children
+                    });
                 }
             })
     }
 
-    handleMissionDelete(id) {
+    handleMissionDelete(id, parent_id) {
         var newMissions = this.state.data
             .filter(function(mission) {
                 return mission.id != id
             });
+        var newChildren = this.state.children;
+        if (parent_id != null && this.state.children[parent_id]) {
+            newChildren = {};
+            for (var key in this.state.children) {
+                if (key == parent_id) {
+                    newChildren[key] = this.state.children[key]
+                        .filter(function(child) {
+                            return child.id != id;
+                        });
+                } else {
+                    newChildren[key] = this.state.children[key];
+                }
+            }
+        }
+
         request
             .del(this.props.url + '/' + id + ".json")
             .set('X-CSRF-Token', this.getCsrfToken())
@@ -62,7 +96,8 @@ class App extends React.Component {
                     console.log('error')
                 } else {
                     this.setState({
-                        data: newMissions
+                        data: newMissions,
+                        children: newChildren
                     })
                 }
             })
@@ -107,7 +142,7 @@ class App extends React.Component {
         return (
                 <div className="app">
                 <h1>Todolist</h1>
-                <Todolist data={this.state.data} onMissionDelete={this.handleMissionDelete} onMissionUpdate={this.handleMissionUpdate} onArrowClick={this.handleArrowClick}/>
+                <Todolist data={this.state.data} children={this.state.children} onMissionDelete={this.handleMissionDelete} onMissionUpdate={this.handleMissionUpdate} onArrowClick={this.handleArrowClick}/>
                 <MissionForm parentId="" onMissionSubmit={this.handleMissionSubmit} />
                 </div>
         );
@@ -150,11 +185,15 @@ class MissionForm extends React.Component {
 
 class Todolist extends React.Component {
     render() {
-        var missions = this.props.data.map(function(mission) {
-            return (
-                    <MissionTreeView key={mission.id} mission={mission} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
-            );
-        }.bind(this));
+        var missions = this.props.data
+            .filter(function(mission) {
+                return mission.parent_id == null;
+            })
+            .map(function(mission) {
+                return (
+                        <MissionTreeView key={mission.id} mission={mission} children={this.props.children} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
+                );
+            }.bind(this));
 
         return (
             <div className="todo-list">
@@ -168,12 +207,26 @@ class MissionTreeView extends React.Component {
     render() {
         var mission = this.props.mission;
         var arrowClass = "tree-view_arrow";
+        var childrenClass = 'tree-view_children';
         if (mission.collapsed) {
             arrowClass += " tree-view_arrow-collapsed";
+            childrenClass += ' tree-view_children-collapsed';
+        }
+        var childrenContainer = null;
+        if (mission.id != null && this.props.children[mission.id]) {
+            childrenContainer = this.props.children[mission.id]
+                .map(function(child) {
+                    return (
+                            <MissionTreeView key={child.id} mission={child} children={this.props.children} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
+                    );
+                }.bind(this));
         }
         return (
                 <div className="tree-view">
-                <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} arrowClass={arrowClass} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
+                <Mission key={mission.id} id={mission.id} title={mission.title} desc={mission.desc} state={mission.state} parent_id={mission.parent_id} arrowClass={arrowClass} onMissionDelete={this.props.onMissionDelete} onMissionUpdate={this.props.onMissionUpdate} onArrowClick={this.props.onArrowClick} />
+                <div className={childrenClass}>
+                {mission.collapsed ? null : childrenContainer}
+                </div>
                 </div>
         );
     }
@@ -182,7 +235,7 @@ class MissionTreeView extends React.Component {
 class Mission extends React.Component {
     handleDelete(e) {
         e.preventDefault();
-        this.props.onMissionDelete(this.props.id);
+        this.props.onMissionDelete(this.props.id, this.props.parent_id);
     }
 
     handleUpdate(e) {
