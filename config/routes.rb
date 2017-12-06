@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
-  root :to => 'missions#index'
+  get 'welcome/index'
+
+  root :to => 'welcome#index'
 
   get 'missions/change_state' => 'missions#change_state'
   
