@@ -76,7 +76,7 @@ var _react = __webpack_require__(5);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _reactDom = __webpack_require__(18);
+var _reactDom = __webpack_require__(19);
 
 var _reactDom2 = _interopRequireDefault(_reactDom);
 
@@ -91,120 +91,401 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var request = __webpack_require__(28);
 
 var App = function (_React$Component) {
-	_inherits(App, _React$Component);
+    _inherits(App, _React$Component);
 
-	function App(props) {
-		_classCallCheck(this, App);
+    function App(props) {
+        _classCallCheck(this, App);
 
-		var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
+        var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
 
-		_this.state = {
-			data: []
-		};
-		return _this;
-	}
+        _this.state = {
+            data: [],
+            children: {}
+        };
+        _this.handleMissionSubmit = _this.handleMissionSubmit.bind(_this);
+        _this.handleMissionDelete = _this.handleMissionDelete.bind(_this);
+        _this.handleMissionUpdate = _this.handleMissionUpdate.bind(_this);
+        _this.handleArrowClick = _this.handleArrowClick.bind(_this);
+        _this.handleAddTextClick = _this.handleAddTextClick.bind(_this);
+        return _this;
+    }
 
-	_createClass(App, [{
-		key: 'componentDidMount',
-		value: function componentDidMount() {
-			var _this2 = this;
+    _createClass(App, [{
+        key: 'componentDidMount',
+        value: function componentDidMount() {
+            var _this2 = this;
 
-			request.get(this.props.url).set('Content-Type', 'application/json').end(function (err, res) {
-				if (err) {
-					console.log(_this2.props.url);
-				}
-				_this2.setState({
-					data: res.body
-				});
-			});
-		}
-	}, {
-		key: 'render',
-		value: function render() {
-			return _react2.default.createElement(
-				'div',
-				{ className: 'app' },
-				_react2.default.createElement(
-					'h1',
-					null,
-					'Todolist'
-				),
-				_react2.default.createElement(Todolist, { data: this.state.data })
-			);
-		}
-	}]);
+            request.get(this.props.url + ".json").set('Content-Type', 'application/json').end(function (err, res) {
+                if (err) {
+                    console.log(_this2.props.url);
+                } else {
+                    var children = {};
+                    for (var i = 0; i < res.body.length; i++) {
+                        res.body[i].collapsed = true;
+                        res.body[i].form_collapsed = true;
+                        if (res.body[i].parent_id != null) {
+                            if (!children[res.body[i].parent_id]) {
+                                children[res.body[i].parent_id] = [];
+                            }
+                            children[res.body[i].parent_id].push(res.body[i]);
+                        }
+                    }
+                    _this2.setState({
+                        data: res.body,
+                        children: children
+                    });
+                }
+            });
+        }
+    }, {
+        key: 'handleMissionSubmit',
+        value: function handleMissionSubmit(mission) {
+            var _this3 = this;
 
-	return App;
+            request.post(this.props.url + ".json").set('X-CSRF-Token', this.getCsrfToken()).send(mission).end(function (err, res) {
+                if (err) {
+                    console.log('error');
+                } else {
+                    res.body.collapsed = true;
+                    res.body.form_collapsed = true;
+                    var children = _this3.state.children;
+                    if (res.body.parent_id != null) {
+                        if (!children[res.body.parent_id]) {
+                            children[res.body.parent_id] = [];
+                        }
+                        children[res.body.parent_id].push(res.body);
+                    }
+                    var missions = _this3.state.data;
+                    var newMissions = missions.concat(res.body);
+                    _this3.setState({
+                        data: newMissions,
+                        children: children
+                    });
+                }
+            });
+        }
+    }, {
+        key: 'handleMissionDelete',
+        value: function handleMissionDelete(id, parent_id) {
+            var _this4 = this;
+
+            var newMissions = this.state.data.filter(function (mission) {
+                return mission.id != id;
+            });
+            var newChildren = this.state.children;
+            if (parent_id != null && this.state.children[parent_id]) {
+                newChildren = {};
+                for (var key in this.state.children) {
+                    if (key == parent_id) {
+                        newChildren[key] = this.state.children[key].filter(function (child) {
+                            return child.id != id;
+                        });
+                    } else {
+                        newChildren[key] = this.state.children[key];
+                    }
+                }
+            }
+
+            request.del(this.props.url + '/' + id + ".json").set('X-CSRF-Token', this.getCsrfToken()).end(function (err, res) {
+                if (err) {
+                    console.log('error');
+                } else {
+                    _this4.setState({
+                        data: newMissions,
+                        children: newChildren
+                    });
+                }
+            });
+        }
+    }, {
+        key: 'handleMissionUpdate',
+        value: function handleMissionUpdate(mission) {
+            request.patch(this.props.url + '/' + mission.mission.id + '.json').set('X-CSRF-Token', this.getCsrfToken()).send(mission).end(function (err, res) {
+                if (err) {
+                    console.log('error');
+                }
+            });
+        }
+    }, {
+        key: 'handleArrowClick',
+        value: function handleArrowClick(id) {
+            var newMissions = this.state.data.map(function (mission) {
+                if (mission.id == id) {
+                    mission.collapsed = !mission.collapsed;
+                }
+                return mission;
+            });
+            this.setState({
+                data: newMissions
+            });
+        }
+    }, {
+        key: 'handleAddTextClick',
+        value: function handleAddTextClick(id) {
+            var newMissions = this.state.data.map(function (mission) {
+                if (mission.id == id) {
+                    mission.form_collapsed = !mission.form_collapsed;
+                }
+                return mission;
+            });
+            this.setState({
+                data: newMissions
+            });
+        }
+    }, {
+        key: 'getCsrfToken',
+        value: function getCsrfToken() {
+            var meta = document.getElementsByTagName('meta');
+            for (var elem in meta) {
+                if (meta[elem].name === 'csrf-token') {
+                    return meta[elem].content;
+                }
+            }
+        }
+    }, {
+        key: 'render',
+        value: function render() {
+            return _react2.default.createElement(
+                'div',
+                { className: 'app' },
+                _react2.default.createElement(
+                    'h1',
+                    null,
+                    'Todolist'
+                ),
+                _react2.default.createElement(Todolist, { data: this.state.data, children: this.state.children, onMissionDelete: this.handleMissionDelete, onMissionUpdate: this.handleMissionUpdate, onArrowClick: this.handleArrowClick, onAddTextClick: this.handleAddTextClick, onMissionSubmit: this.handleMissionSubmit }),
+                _react2.default.createElement(MissionForm, { parent_id: '', onMissionSubmit: this.handleMissionSubmit })
+            );
+        }
+    }]);
+
+    return App;
 }(_react2.default.Component);
 
-var Todolist = function (_React$Component2) {
-	_inherits(Todolist, _React$Component2);
+var MissionForm = function (_React$Component2) {
+    _inherits(MissionForm, _React$Component2);
 
-	function Todolist() {
-		_classCallCheck(this, Todolist);
+    function MissionForm() {
+        _classCallCheck(this, MissionForm);
 
-		return _possibleConstructorReturn(this, (Todolist.__proto__ || Object.getPrototypeOf(Todolist)).apply(this, arguments));
-	}
+        return _possibleConstructorReturn(this, (MissionForm.__proto__ || Object.getPrototypeOf(MissionForm)).apply(this, arguments));
+    }
 
-	_createClass(Todolist, [{
-		key: 'render',
-		value: function render() {
-			var missions = this.props.data.map(function (mission) {
-				return _react2.default.createElement(Mission, { key: mission.id, title: mission.title, desc: mission.desc, state: mission.state });
-			}.bind(this));
+    _createClass(MissionForm, [{
+        key: 'handleSubmit',
+        value: function handleSubmit(e) {
+            e.preventDefault();
+            var title = _reactDom2.default.findDOMNode(this.refs.title).value.trim();
+            var desc = _reactDom2.default.findDOMNode(this.refs.desc).value.trim();
+            var parent_id = _reactDom2.default.findDOMNode(this.refs.parent_id).value.trim();
+            if (!title) {
+                return;
+            }
+            this.props.onMissionSubmit({ mission: { title: title,
+                    desc: desc,
+                    parent_id: parent_id,
+                    state: 'TODO'
+                }
+            });
+            _reactDom2.default.findDOMNode(this.refs.title).value = '';
+            _reactDom2.default.findDOMNode(this.refs.desc).value = '';
+            return;
+        }
+    }, {
+        key: 'render',
+        value: function render() {
+            return _react2.default.createElement(
+                'form',
+                { className: 'todoForm', onSubmit: this.handleSubmit.bind(this) },
+                _react2.default.createElement(
+                    'div',
+                    { className: 'input-group' },
+                    _react2.default.createElement('input', { type: 'text', className: 'form-control', placeholder: 'Title', ref: 'title' }),
+                    _react2.default.createElement('input', { type: 'text', className: 'form-control', placeholder: 'Desc', ref: 'desc' }),
+                    _react2.default.createElement('input', { type: 'hidden', className: 'form-control', value: this.props.parent_id, ref: 'parent_id' }),
+                    _react2.default.createElement('input', { type: 'submit', className: 'btn', value: 'Create' })
+                )
+            );
+        }
+    }]);
 
-			return _react2.default.createElement(
-				'div',
-				{ className: 'todo' },
-				missions
-			);
-		}
-	}]);
-
-	return Todolist;
+    return MissionForm;
 }(_react2.default.Component);
 
-var Mission = function (_React$Component3) {
-	_inherits(Mission, _React$Component3);
+var Todolist = function (_React$Component3) {
+    _inherits(Todolist, _React$Component3);
 
-	function Mission() {
-		_classCallCheck(this, Mission);
+    function Todolist() {
+        _classCallCheck(this, Todolist);
 
-		return _possibleConstructorReturn(this, (Mission.__proto__ || Object.getPrototypeOf(Mission)).apply(this, arguments));
-	}
+        return _possibleConstructorReturn(this, (Todolist.__proto__ || Object.getPrototypeOf(Todolist)).apply(this, arguments));
+    }
 
-	_createClass(Mission, [{
-		key: 'render',
-		value: function render() {
-			return _react2.default.createElement(
-				'div',
-				{ className: 'mission' },
-				_react2.default.createElement(
-					'tbody',
-					null,
-					_react2.default.createElement(
-						'tr',
-						null,
-						_react2.default.createElement(
-							'td',
-							null,
-							this.props.title
-						),
-						_react2.default.createElement(
-							'td',
-							null,
-							this.props.state
-						)
-					)
-				)
-			);
-		}
-	}]);
+    _createClass(Todolist, [{
+        key: 'render',
+        value: function render() {
+            var missions = this.props.data.filter(function (mission) {
+                return mission.parent_id == null;
+            }).map(function (mission) {
+                return _react2.default.createElement(MissionTreeView, { key: mission.id, mission: mission, children: this.props.children, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick, onAddTextClick: this.props.onAddTextClick, onMissionSubmit: this.props.onMissionSubmit });
+            }.bind(this));
 
-	return Mission;
+            return _react2.default.createElement(
+                'div',
+                { className: 'todo-list' },
+                missions
+            );
+        }
+    }]);
+
+    return Todolist;
 }(_react2.default.Component);
 
-_reactDom2.default.render(_react2.default.createElement(App, { url: 'missions.json' }), document.getElementById("content"));
+var MissionTreeView = function (_React$Component4) {
+    _inherits(MissionTreeView, _React$Component4);
+
+    function MissionTreeView() {
+        _classCallCheck(this, MissionTreeView);
+
+        return _possibleConstructorReturn(this, (MissionTreeView.__proto__ || Object.getPrototypeOf(MissionTreeView)).apply(this, arguments));
+    }
+
+    _createClass(MissionTreeView, [{
+        key: 'render',
+        value: function render() {
+            var mission = this.props.mission;
+            var arrowClass = "tree-view_arrow";
+            var childrenClass = 'tree-view_children';
+            if (mission.collapsed) {
+                arrowClass += " tree-view_arrow-collapsed";
+                childrenClass += ' tree-view_children-collapsed';
+            }
+
+            var childrenContainer = null;
+            if (mission.id != null && this.props.children[mission.id]) {
+                childrenContainer = this.props.children[mission.id].map(function (child) {
+                    return _react2.default.createElement(MissionTreeView, { key: child.id, mission: child, children: this.props.children, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick, onAddTextClick: this.props.onAddTextClick, onMissionSubmit: this.props.onMissionSubmit });
+                }.bind(this));
+            }
+
+            var addFormContainer = _react2.default.createElement(MissionForm, { parent_id: mission.id, onMissionSubmit: this.props.onMissionSubmit });
+
+            return _react2.default.createElement(
+                'div',
+                { className: 'tree-view' },
+                _react2.default.createElement(Mission, { key: mission.id, id: mission.id, title: mission.title, desc: mission.desc, state: mission.state, parent_id: mission.parent_id, arrowClass: arrowClass, onMissionDelete: this.props.onMissionDelete, onMissionUpdate: this.props.onMissionUpdate, onArrowClick: this.props.onArrowClick, onAddTextClick: this.props.onAddTextClick }),
+                _react2.default.createElement(
+                    'div',
+                    { className: mission.form_collapsed ? "add-form_collapsed" : "" },
+                    mission.form_collapsed ? null : addFormContainer
+                ),
+                _react2.default.createElement(
+                    'div',
+                    { className: childrenClass },
+                    mission.collapsed ? null : childrenContainer
+                )
+            );
+        }
+    }]);
+
+    return MissionTreeView;
+}(_react2.default.Component);
+
+var Mission = function (_React$Component5) {
+    _inherits(Mission, _React$Component5);
+
+    function Mission() {
+        _classCallCheck(this, Mission);
+
+        return _possibleConstructorReturn(this, (Mission.__proto__ || Object.getPrototypeOf(Mission)).apply(this, arguments));
+    }
+
+    _createClass(Mission, [{
+        key: 'handleDelete',
+        value: function handleDelete(e) {
+            e.preventDefault();
+            this.props.onMissionDelete(this.props.id, this.props.parent_id);
+        }
+    }, {
+        key: 'handleUpdate',
+        value: function handleUpdate(e) {
+            e.preventDefault();
+            this.props.onMissionUpdate({ mission: { id: this.props.id,
+                    state: e.target.value } });
+        }
+    }, {
+        key: 'handleClick',
+        value: function handleClick(e) {
+            e.preventDefault();
+            this.props.onArrowClick(this.props.id);
+        }
+    }, {
+        key: 'handleAddTextClick',
+        value: function handleAddTextClick(e) {
+            e.preventDefault();
+            this.props.onAddTextClick(this.props.id);
+        }
+    }, {
+        key: 'render',
+        value: function render() {
+            return _react2.default.createElement(
+                'div',
+                { className: 'tree-view_item' },
+                _react2.default.createElement('div', { className: this.props.arrowClass, onClick: this.handleClick.bind(this) }),
+                _react2.default.createElement(
+                    'div',
+                    { className: 'tree-view_cell' },
+                    this.props.title
+                ),
+                _react2.default.createElement(
+                    'div',
+                    { className: 'tree-view_cell' },
+                    _react2.default.createElement(
+                        'select',
+                        { className: 'form-control', defaultValue: this.props.state, onChange: this.handleUpdate.bind(this) },
+                        _react2.default.createElement(
+                            'option',
+                            { value: 'TODO', key: 'TODO' },
+                            'TODO'
+                        ),
+                        _react2.default.createElement(
+                            'option',
+                            { value: 'DOING', key: 'DOING' },
+                            'DOING'
+                        ),
+                        _react2.default.createElement(
+                            'option',
+                            { value: 'DONE', key: 'DONE' },
+                            'DONE'
+                        )
+                    )
+                ),
+                _react2.default.createElement(
+                    'div',
+                    { className: 'tree-view_cell' },
+                    _react2.default.createElement(
+                        'span',
+                        { className: 'add-form_link', onClick: this.handleAddTextClick.bind(this) },
+                        'Add Mission'
+                    )
+                ),
+                _react2.default.createElement(
+                    'div',
+                    { className: 'tree-view_cell' },
+                    _react2.default.createElement(
+                        'button',
+                        { className: 'btn btn-danger', onClick: this.handleDelete.bind(this) },
+                        'delete'
+                    )
+                )
+            );
+        }
+    }]);
+
+    return Mission;
+}(_react2.default.Component);
+
+_reactDom2.default.render(_react2.default.createElement(App, { url: 'missions' }), document.getElementById("content"));
 
 /***/ }),
 /* 1 */
@@ -567,9 +848,9 @@ module.exports = emptyObject;
 /* WEBPACK VAR INJECTION */(function(process) {
 
 if (process.env.NODE_ENV === 'production') {
-  module.exports = __webpack_require__(15);
-} else {
   module.exports = __webpack_require__(16);
+} else {
+  module.exports = __webpack_require__(17);
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
@@ -720,7 +1001,7 @@ module.exports = warning;
 if (process.env.NODE_ENV !== 'production') {
   var invariant = __webpack_require__(6);
   var warning = __webpack_require__(7);
-  var ReactPropTypesSecret = __webpack_require__(17);
+  var ReactPropTypesSecret = __webpack_require__(18);
   var loggedTypeFailures = {};
 }
 
@@ -1019,7 +1300,7 @@ module.exports = shallowEqual;
  * 
  */
 
-var isTextNode = __webpack_require__(20);
+var isTextNode = __webpack_require__(21);
 
 /*eslint-disable no-bitwise */
 
@@ -1081,6 +1362,28 @@ module.exports = focusNode;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+
+
+/**
+ * Check if `obj` is an object.
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+
+function isObject(obj) {
+  return null !== obj && 'object' === typeof obj;
+}
+
+module.exports = isObject;
+
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
 /** @license React v16.2.0
  * react.production.min.js
  *
@@ -1105,7 +1408,7 @@ isValidElement:K,version:"16.2.0",__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_F
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2470,7 +2773,7 @@ module.exports = react;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2489,7 +2792,7 @@ module.exports = ReactPropTypesSecret;
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2527,15 +2830,15 @@ if (process.env.NODE_ENV === 'production') {
   // DCE check should happen before ReactDOM bundle executes so that
   // DevTools can report bad minification during injection.
   checkDCE();
-  module.exports = __webpack_require__(19);
+  module.exports = __webpack_require__(20);
 } else {
-  module.exports = __webpack_require__(22);
+  module.exports = __webpack_require__(23);
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2771,7 +3074,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2786,7 +3089,7 @@ Z.injectIntoDevTools({findFiberByHostInstance:pb,bundleType:0,version:"16.2.0",r
  * @typechecks
  */
 
-var isNode = __webpack_require__(21);
+var isNode = __webpack_require__(22);
 
 /**
  * @param {*} object The object to check.
@@ -2799,7 +3102,7 @@ function isTextNode(object) {
 module.exports = isTextNode;
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2827,7 +3130,7 @@ function isNode(object) {
 module.exports = isNode;
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2861,8 +3164,8 @@ var containsNode = __webpack_require__(13);
 var focusNode = __webpack_require__(14);
 var emptyObject = __webpack_require__(4);
 var checkPropTypes = __webpack_require__(8);
-var hyphenateStyleName = __webpack_require__(23);
-var camelizeStyleName = __webpack_require__(25);
+var hyphenateStyleName = __webpack_require__(24);
+var camelizeStyleName = __webpack_require__(26);
 
 /**
  * WARNING: DO NOT manually require this module.
@@ -18229,7 +18532,7 @@ module.exports = reactDom;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18244,7 +18547,7 @@ module.exports = reactDom;
 
 
 
-var hyphenate = __webpack_require__(24);
+var hyphenate = __webpack_require__(25);
 
 var msPattern = /^ms-/;
 
@@ -18271,7 +18574,7 @@ function hyphenateStyleName(string) {
 module.exports = hyphenateStyleName;
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18307,7 +18610,7 @@ function hyphenate(string) {
 module.exports = hyphenate;
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18322,7 +18625,7 @@ module.exports = hyphenate;
 
 
 
-var camelize = __webpack_require__(26);
+var camelize = __webpack_require__(27);
 
 var msPattern = /^-ms-/;
 
@@ -18350,7 +18653,7 @@ function camelizeStyleName(string) {
 module.exports = camelizeStyleName;
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18385,28 +18688,6 @@ function camelize(string) {
 module.exports = camelize;
 
 /***/ }),
-/* 27 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * Check if `obj` is an object.
- *
- * @param {Object} obj
- * @return {Boolean}
- * @api private
- */
-
-function isObject(obj) {
-  return null !== obj && 'object' === typeof obj;
-}
-
-module.exports = isObject;
-
-
-/***/ }),
 /* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -18426,7 +18707,7 @@ if (typeof window !== 'undefined') { // Browser window
 
 var Emitter = __webpack_require__(29);
 var RequestBase = __webpack_require__(30);
-var isObject = __webpack_require__(27);
+var isObject = __webpack_require__(15);
 var ResponseBase = __webpack_require__(31);
 var Agent = __webpack_require__(33);
 
@@ -19509,7 +19790,7 @@ Emitter.prototype.hasListeners = function(event){
 /**
  * Module of mixed-in functions shared between node and client code
  */
-var isObject = __webpack_require__(27);
+var isObject = __webpack_require__(15);
 
 /**
  * Expose `RequestBase`.
